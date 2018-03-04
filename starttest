@@ -1,0 +1,9 @@
+CycleNo = 10; % it is equivalent to 30 trials, because single cycle contains random sequence of 3 trials, 10 by default
+MinimumBlocks = 2;  % 2 by default
+MaximumBlocks = 4;  % 4 by default
+    
+
+
+filename = input('Podaj nazwę pliku z raportem (bez rozszerzenia): ','s');
+
+runtest(filename, CycleNo, MinimumBlocks, MaximumBlocks);
