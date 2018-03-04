@@ -1,0 +1,685 @@
+% funkcja runtest z matlaba
+
+% % % KATARZYNA SZYMAŃSKA
+function runtest(filename, CycleNo, MinimumBlocks, MaximumBlocks)
+
+    clear Stimulus;
+    global Stimulus;
+    global RewardHappy;
+    global RewardSad;
+
+   
+    %****************
+    TrainingCycleLength = 3;
+    %****************
+    data_badania = clock;
+    dirname = [num2str(data_badania(1)) '_' num2str(data_badania(2)) '_' num2str(data_badania(3)) '_' filename];
+    
+    if exist('stimuli.mat','file')
+        
+        load stimuli.mat;
+        
+    else
+        
+        listing = dir('obrazki');
+        listing(1:2) = [];
+        Nobrazki = length(listing);
+        indices = randperm(Nobrazki);
+        indices = indices(1:6);
+        idxfood = 0;
+        for i = 1:length(indices)
+            if strcmp(listing(indices(i)).name,'food.png') == 1
+                idxfood = i;
+            end
+        end
+        Stimulus{1} = imread(strcat('obrazki\',listing(indices(1)).name),'BackgroundColor',[1 1 1]);
+        Stimulus{2} = imread(strcat('obrazki\',listing(indices(2)).name),'BackgroundColor',[1 1 1]);
+        Stimulus{3} = imread(strcat('obrazki\',listing(indices(3)).name),'BackgroundColor',[1 1 1]);
+        Stimulus{4} = imread(strcat('obrazki\',listing(indices(4)).name),'BackgroundColor',[1 1 1]);
+        Stimulus{5} = imread(strcat('obrazki\',listing(indices(5)).name),'BackgroundColor',[1 1 1]);
+        Stimulus{6} = imread(strcat('obrazki\',listing(indices(6)).name),'BackgroundColor',[1 1 1]);
+        pom = Stimulus{6}; Stimulus{6} = Stimulus{idxfood}; Stimulus{idxfood} = pom;
+        listing = dir('obrazkitest');
+        listing(1:2) = [];
+        Stimulus{7} = imread(strcat('obrazkitest\',listing(1).name),'BackgroundColor',[1 1 1]);
+        Stimulus{8} = imread(strcat('obrazkitest\',listing(2).name),'BackgroundColor',[1 1 1]);
+        RewardHappy = imread(strcat('reward\','happy.png'),'BackgroundColor',[1 1 1]);
+        RewardSad = imread(strcat('reward\','sad.png'),'BackgroundColor',[1 1 1]);
+        %Stimulipermutation = randperm(length(Stimulus)); % permute the sequence of stimuli read out from png files
+        %Stimulus = Stimulus(Stimulipermutation);
+        % succesive pairs are {1,2} {3,4} {5,6}
+        ProbRew = [90 15 80 30 80 30]/100;  % save to stimuli.mat file
+
+%        save('stimuli.mat', 'Stimulus', 'ProbRew', 'Stimulipermutation');
+        save('stimuli.mat', 'Stimulus', 'ProbRew', 'RewardHappy','RewardSad');
+
+    end
+    
+    h = InitScreen();
+    
+    %##############################
+    testOK = 0;
+    while testOK == 0
+        Showtext(['Proszę przeczytać uważnie poniższą instrukcję.' newline newline ...
+            'Na ekranie będą prezentowane pary różnych obrazków.' newline newline ...
+            'Jeden z nich jest "szczęśliwy" a drugi "pechowy".' newline ...
+            'Na początku nie będziesz wiedzieć, który jest który.' newline newline ...
+            'Wskazanie "szczęśliwego" obrazka daje większą szansę na nagrodę (\color{yellow}wesoła buźka\color{black}).' newline ...
+            'Czasem powoduje jednak pojawienie się kary (\color{red}smutna buźka\color{black}).' newline newline ...
+            'Twoim celem jest zebranie jak największej liczby nagród.' newline newline ...
+            'Naciśnij spację by kontynuować.'], 25, 'black'); 
+        waitforbuttonpress
+        Showtext(['Szczęśliwy obrazek proszę wskazywać używając następujących klawiszy:' newline newline ...
+            '"1" - wybór obrazka po lewej stronie,' newline newline ...
+            '"0" - wybór obrazka po prawej stronie.' newline newline ...
+            'Wyboru należy dokonywać jak najszybciej (w ciągu 3 sekund).' newline newline ...
+            'Naciśnij spację by kontynuować.'], 25, 'black')
+        waitforbuttonpress
+        Showtext(['Zbierz jak najwięcej nagród samodzielnie oceniając kolejne prezentowane obrazki.' newline newline ...
+            'Naciśnij spację by kontynuować.'], 25, 'black')
+        waitforbuttonpress
+        Showtext(['Zanim zaczniemy badanie' newline ...
+            'sprawdzimy czy właściwie rozumiesz podane instrukcje.' newline newline ...
+            'Proszę odpowiedzieć na kilka pytań dotyczących instrukcji.' newline newline ...
+            'Naciśnij spację by kontynuować.'], 25, 'black')
+        waitforbuttonpress
+        Showtext(['Jakim klawiszem wybiera się obrazek z lewej strony?' newline newline ...
+            'Udziel odpowiedzi, wciskając odpowiedni klawisz ...'], 25, 'black');
+        ans2 = getanykey();
+        Showtext(['Jakim klawiszem wybiera się obrazek z prawej strony?' newline newline ...
+            'Udziel odpowiedzi, wciskając odpowiedni klawisz ...'], 25, 'black');
+        ans3 = getanykey();
+        if ans2 == '1' && ans3 == '0'
+            testOK = 1;
+        else
+            Showtext(['Co najmniej jedna z odpowiedzi jest nieprawidłowa.' newline newline ...
+            'Instrukcja zostanie powtórzona.' newline newline ...
+            'Naciśnij spację by kontynuować.'], 25, 'black');
+            waitforbuttonpress
+        end
+    end
+    %##############################
+    Showtext(['Świetnie! Niebawem przejdziemy do właściwego badania.' newline newline ...
+        'Przed prezentacją każdej pary obrazków zobaczysz planszę z zielonym kółkiem.' newline newline ...
+        'Połóż ręce na klawiaturze w taki sposób aby dało się swobodnie naciskać klawisze "1" i "0".' newline newline ...
+        'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    Showtext(['Na początek kilka par obrazków na próbę.' newline newline ...
+        'Naciśnij spację by kontynuować.'], 25, 'black');   
+    waitforbuttonpress
+    
+    for i = 1:6
+        Showfocuspoint(1,3);
+        ShowTrial(7,8,[1 0]','Feedback');
+    end
+    
+    Showtext(['Świetnie!' char (10) newline ...
+        'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    Showtext(['Teraz rozpocznie się właściwa część badania.' newline newline ...
+        'Tak jak do tej pory:' newline newline ...
+        '"1" - wybór obrazka po lewej stronie,' newline newline ...
+        '"0" - wybór obrazka po prawej stronie.' newline newline ...
+        'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    Showtext('Przygotuj się!', 25, 'black');
+    pause(3)    
+    
+    %############################  Normal Trials ##############################
+    StimulusHistory = [];
+    StimulusHistoryLeft = [];
+    StimulusHistoryRight = [];
+    ActionHistory = [];
+    CorrectActionHistory = [];
+    RewardHistory = [];
+    RTimeHistory = [];
+    
+    
+    moreBlocks = 1; % if subject did not learn contingencies, then the next block goes on
+    b = 1;
+    while moreBlocks == 1 && b <= MaximumBlocks
+    
+        % ^^^^^^^^^ training cycle ^^^^^^^^^
+        ABcorrect(b) = 0;
+        CDcorrect(b) = 0;
+        EFcorrect(b) = 0;
+
+        ActionBlockHistory = zeros(1,TrainingCycleLength*CycleNo);
+        CorrectActionBlockHistory = zeros(1,TrainingCycleLength*CycleNo);
+        RewardBlockHistory = zeros(1,TrainingCycleLength*CycleNo);
+        RTimeBlockHistory = zeros(1,TrainingCycleLength*CycleNo);
+        StimulusBlockHistory = zeros(1,TrainingCycleLength*CycleNo);
+        StimulusBlockHistoryLeft = zeros(1,TrainingCycleLength*CycleNo);
+        StimulusBlockHistoryRight = zeros(1,TrainingCycleLength*CycleNo);        
+        
+        for c = 1:CycleNo
+            
+            pairs = 1:TrainingCycleLength; % numbers of all training pairs
+            pairs = pairs(randperm(TrainingCycleLength));
+            if c > 1
+                while pairs(1) == StimulusBlockHistory(TrainingCycleLength*(c-1))
+                    pairs = pairs(randperm(TrainingCycleLength));
+                end
+            else
+                if b > 1
+                    while pairs(1) == StimulusHistory(length(StimulusHistory))
+                        pairs = pairs(randperm(TrainingCycleLength));
+                    end
+                end
+            end
+            StimulusBlockHistory(TrainingCycleLength*(c-1)+1:TrainingCycleLength*c) = pairs;
+            
+        end
+        
+% % % PATRYCJA PALUS        
+        RewardsGrantedA = zeros(1,CycleNo);
+        RewardsGrantedB = zeros(1,CycleNo);
+        RewardsGrantedC = zeros(1,CycleNo);
+        RewardsGrantedD = zeros(1,CycleNo);
+        RewardsGrantedE = zeros(1,CycleNo);
+        RewardsGrantedF = zeros(1,CycleNo);        
+        RewardsGrantedA(1:floor(CycleNo*ProbRew(1))) = 1;
+        RewardsGrantedB(1:floor(CycleNo*ProbRew(2))) = 1;
+        RewardsGrantedC(1:floor(CycleNo*ProbRew(3))) = 1;
+        RewardsGrantedD(1:floor(CycleNo*ProbRew(4))) = 1;   
+        RewardsGrantedE(1:floor(CycleNo*ProbRew(5))) = 1;
+        RewardsGrantedF(1:floor(CycleNo*ProbRew(6))) = 1;    
+        RewardsGranted = zeros(2,TrainingCycleLength*CycleNo);
+        
+        idx1 = StimulusBlockHistory == 1;
+        idx2 = StimulusBlockHistory == 2;
+        idx3 = StimulusBlockHistory == 3;
+        RewardsGranted(1,idx1) = RewardsGrantedA(randperm(CycleNo));
+        RewardsGranted(2,idx1) = RewardsGrantedB(randperm(CycleNo));
+        RewardsGranted(1,idx2) = RewardsGrantedC(randperm(CycleNo));
+        RewardsGranted(2,idx2) = RewardsGrantedD(randperm(CycleNo));
+        RewardsGranted(1,idx3) = RewardsGrantedE(randperm(CycleNo));
+        RewardsGranted(2,idx3) = RewardsGrantedF(randperm(CycleNo));
+        
+        for i = 1:TrainingCycleLength*CycleNo          
+            
+            Showfocuspoint(1,3);
+            [ActionBlockHistory(i), RewardBlockHistory(i), RTimeBlockHistory(i), ...
+                StimulusBlockHistoryLeft(i), StimulusBlockHistoryRight(i), CorrectActionBlockHistory(i)] ...
+                = ShowTrial(2*StimulusBlockHistory(i)-1, 2*StimulusBlockHistory(i), RewardsGranted(:,i), 'Feedback');
+            
+        end
+        
+        ABcorrect(b) = sum((CorrectActionBlockHistory == 1) .* (StimulusBlockHistory == 1));
+        CDcorrect(b) = sum((CorrectActionBlockHistory == 1) .* (StimulusBlockHistory == 2));
+        EFcorrect(b) = sum((CorrectActionBlockHistory == 1) .* (StimulusBlockHistory == 3));
+            
+        StimulusHistory = [StimulusHistory StimulusBlockHistory];
+        StimulusHistoryLeft = [StimulusHistoryLeft StimulusBlockHistoryLeft];
+        StimulusHistoryRight = [StimulusHistoryRight StimulusBlockHistoryRight];
+        ActionHistory = [ActionHistory ActionBlockHistory];
+        CorrectActionHistory = [CorrectActionHistory CorrectActionBlockHistory];
+        RewardHistory = [RewardHistory RewardBlockHistory];
+        RTimeHistory = [RTimeHistory RTimeBlockHistory];       
+        
+        ABperformance(b) = ABcorrect(b) / CycleNo;
+        CDperformance(b) = CDcorrect(b) / CycleNo;
+        EFperformance(b) = EFcorrect(b) / CycleNo;
+        
+
+        mkdir(dirname);
+        save([dirname '\' filename 'learning'], 'StimulusHistory', 'StimulusHistoryLeft', 'StimulusHistoryRight', 'ActionHistory', 'CorrectActionHistory', 'RewardHistory', 'RTimeHistory', ...
+            'ABperformance','CDperformance','EFperformance');
+        
+        if b >= MinimumBlocks && ABperformance(b) >= 65/100 && CDperformance(b) >= 60/100 && EFperformance(b) >= 50/100
+            moreBlocks = 0;
+        end
+        
+        b = b + 1;
+        if moreBlocks == 1 && b <= MaximumBlocks && b >= MinimumBlocks
+            Showtext(['Spora część badania została wykonana.' newline newline ...
+                'Jeżeli potrzebujesz, możesz zrobić sobie chwilę przerwy.' newline newline ...
+                'Naciśnij spację by kontynuować.'], 25, 'black');
+                waitforbuttonpress           
+        end
+        
+    end
+    % ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    %####################################################################
+    Showtext(['Dziękujemy za wykonanie pierwszej części badania.' newline newline...
+        'W tej chwili zapisywany jest raport z jej przebiegu...'], 25, 'black');
+    pause(1)
+    save([dirname '\' filename 'learning'], 'StimulusHistory', 'StimulusHistoryLeft', 'StimulusHistoryRight', 'ActionHistory', 'CorrectActionHistory', 'RewardHistory', 'RTimeHistory');
+    %SaveToExcel([dirname '\' filename 'learning'], 1, {'A1', 'B1', 'A2', 'B2', 'A3', 'B3', 'A4', 'B4', 'A5', 'B5', 'A6', 'B6', 'A7', 'B7'}, {{'StimulusPair'}, StimulusHistory, {'StimulusLeft'}, StimulusHistoryLeft, {'StimulusRight'}, StimulusHistoryRight, ...
+    %    {'Action'}, ActionHistory, {'Was the Action Correct?'}, CorrectActionHistory, {'Reward'}, RewardHistory, {'Response time'}, RTimeHistory});
+    Showtext(['Zakończono zapisywanie raportu do pierwszej części badania.' newline newline ...
+        'Prosimy o przejście do drugiej, ostatniej części.' newline newline ...
+        'Jest ona zdecydowanie krótsza od pierwszej części.' newline newline ...
+        'Jeśli potrzebujesz, możesz zrobić sobie chwilę przerwy.' newline newline ...
+        'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    Showtext(['W tej części badania po Twoich wyborach nie będą się pojawiały nagrody ani kary.' newline ...
+         'Wybieraj te obrazki, które dotychczas były bardziej "szczęśliwe".' char (10) newline ...
+         'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    Showtext(['Wszystkie obrazki pojawiały się w poprzedniej części badania,' newline ...
+         'ale tym razem mogą być zestawione w parach, których wcześniej nie było.' newline newline ...
+         'Wybierz wówczas ten obrazek, który wydaje Ci się lepszy.' char (10) newline ...
+         'Jeśli nie masz pewności, który obrazek wybrać, zaufaj swojej intuicji.' newline newline ...
+         'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress    
+    Showtext('Przygotuj się!', 25, 'black');
+    pause(3)    
+    % generate all possible pairs
+    M = 6;
+    TotalPairs = M*(M-1)/2;
+    stimulipairs = zeros(TotalPairs,3);
+    k = 1;
+    for i = 1:M-1
+        for j = i+1:M
+            stimulipairs(k,1:2) = [i j];
+            k = k + 1;
+        end
+    end
+    % assign weights to pairs (1 to previeously learned pairs, 6 to new
+    % pairs)
+    occurence = zeros(1,length(stimulipairs));
+    for i = 1:length(stimulipairs)
+        if stimulipairs(i,1) == 1 && stimulipairs(i,2) == 2 ...
+            || stimulipairs(i,1) == 3 && stimulipairs(i,2) == 4 ...
+            || stimulipairs(i,1) == 5 && stimulipairs(i,2) == 6
+            occurence(i) = 1;
+        else
+            occurence(i) = 6;
+        end
+    end
+    for i = 1:length(stimulipairs)
+        stimulipairs(i,:) = [stimulipairs(i,1:2) occurence(i)];
+    end
+    
+    stimulipairs = sortrows(stimulipairs,3);
+    oldstimulipairs = stimulipairs(stimulipairs(:,3) == 1,:);
+    newstimulipairs = stimulipairs(stimulipairs(:,3) == 6,:);
+    oldstimulipairs(:,3) = [];
+    newstimulipairs(:,3) = [];
+    
+    stimulisession = [oldstimulipairs; newstimulipairs(randperm(length(newstimulipairs)),:)];
+    for i = 2:6
+        
+        addstimulipairs = newstimulipairs(randperm(length(newstimulipairs)),:);
+        while addstimulipairs(1,1) == stimulisession(length(stimulisession),1) && addstimulipairs(1,2) == stimulisession(length(stimulisession),2)
+            addstimulipairs = newstimulipairs(randperm(length(newstimulipairs)),:);
+        end
+        stimulisession = [stimulisession; addstimulipairs];
+        
+    end
+
+    StimulusHistoryLeft = stimulisession(:,1)';
+    StimulusHistoryRight = stimulisession(:,2)';
+    ActionHistory = zeros(1,length(stimulisession));
+    RTimeHistory = zeros(1,length(stimulisession));
+    
+    for i = 1 : length(stimulisession)
+                
+        Showfocuspoint(1,3);
+        [ActionHistory(i), ~, RTimeHistory(i), ~, ~, ~] = ShowTrial(stimulisession(i,1),stimulisession(i,2), [], 'No Feedback');
+        save([dirname '\' filename 'testing'], 'StimulusHistoryLeft', 'StimulusHistoryRight', 'ActionHistory', 'RTimeHistory');    
+        
+    end
+    %####################################################################
+    
+    Showtext(['Dziękujemy za dotychczasowy wysiłek. Już prawie jesteśmy przy końcu badania.' newline newline ...
+            'Zostało tylko ostatnie krótkie zadanie.' newline newline ... 
+            'Na następnych planszach pojawią się kolejno wszystkie obrazki.' newline ...
+            'Przy każdym z nich, wyobraź sobie, że wybierasz go 100 razy pod rząd.' newline ...
+            'Jak czujesz, ile wówczas nagród (mniej więcej) można za niego otrzymać?' newline newline ...
+            'Pod obrazkiem będzie suwak, który możesz ustawić w pozycji od 0 - zawsze pechowy' newline ...
+            'aż do 100 - zawsze szczęśliwy. Możesz użyć kursora do przesuwania suwakiem,' newline ...
+            'lub strzałek po obu stronach suwaka.' newline ...
+            'Potwierdzasz, klikając kursorem w przycisk OK.' newline newline ... 
+            'Naciśnij spację by kontynuować.'], 25, 'black');
+    waitforbuttonpress
+    
+% % % PATRYK KĘDZIOR
+    UserProbabilities = zeros(1,6);
+    for i = randperm(6)
+        cla
+        subplot(1,6,3);
+        q = subplot(1,6,3);
+        pos = get(q,'position'); % centering
+        pos(1) = pos(1) + 0.05;
+        set(q, 'position', pos);
+        imshow(Stimulus{i});
+        slajder = uicontrol('Style', 'slider',...
+            'Min',0,'Max',100,'Value',50,...
+            'SliderStep', [0.05 0.05], ...
+            'Units','normalized', ...
+            'Position', [0.45 0.2 0.08 0.03],...
+            'BackgroundColor','white',...
+            'Callback', {@SetProb,h}); 
+        tekst = uicontrol('Style','text',...
+            'Units','normalized', ...
+            'Position',[0.471 0.27 0.04 0.05],...
+            'FontSize',27,...
+            'BackgroundColor','white',...
+            'String',50);
+        tekstP = uicontrol('Style','text',...
+            'Units','normalized', ...
+            'Position',[0.388 0.204 0.06 0.03],...
+            'FontSize',14,...
+            'BackgroundColor','white',...
+            'String','pechowy');
+        tekstS = uicontrol('Style','text',...
+            'Units','normalized', ...
+            'Position',[0.535 0.204 0.06 0.03],...
+            'FontSize',14,...
+            'BackgroundColor','white',...
+            'String','szczęśliwy');
+        
+        ButtonOKHandle = uicontrol('Parent',h,'Style','pushbutton','String','OK','Units','normalized', 'Position',[0.46 0.130 0.06 0.04], 'FontSize', 22);
+        set(ButtonOKHandle,'Callback',{@ButtonOKCallback, ButtonOKHandle});
+        waitfor(ButtonOKHandle);
+        UserProbabilities(i) = uint8(str2double(get(tekst,'String')));  
+        delete(slajder);
+        delete(tekst);
+        delete(tekstP);
+        delete(tekstS);
+    end    
+    Showtext(['Gratulacje! Całe badanie zostało ukończone!' newline newline ...
+        'Dziękujemy za jego wykonanie.' newline newline ...
+        'W tej chwili zapisywany jest raport końcowy...'], 25, 'black');
+    pause(1);
+    save([dirname '\' filename 'testing'], 'StimulusHistoryLeft', 'StimulusHistoryRight', 'ActionHistory', 'RTimeHistory', 'UserProbabilities');
+    %SaveToExcel([dirname '\' filename 'testing'], 1, {'A1', 'B1', 'A2', 'B2', 'A3', 'B3', 'A4', 'B4'}, {{'StimulusLeft'}, StimulusHistoryLeft, ...
+    %   {'StimulusRight'}, StimulusHistoryRight, {'Action'}, ActionHistory, {'Response time'}, RTimeHistory});
+    %SaveToExcel([dirname '\' filename 'testing'], 2, {'A1', 'B1', 'A2', 'B2'}, {{'StimulusNo'}, 1:6, {'UserProbabilities'}, UserProbabilities});
+    Showtext(['Zakończono zapisywanie raportu.' newline newline ...
+              ' Dziękujemy.'], 25, 'black');
+    pause(2);
+    
+    
+    function SetProb(hObj,event,ax) 
+        val = get(hObj,'Value');
+        remainder_5 = mod(val,5);
+        if remainder_5 < 2.5
+           val = floor(val - remainder_5);
+        else
+           val = ceil(val - remainder_5 + 5);
+        end
+        set(tekst,'String',num2str(val));
+    end
+ 
+
+end % function runtest
+
+function ButtonOKCallback(hObject,event, ButtonOKHandle)
+
+    delete(ButtonOKHandle);
+    
+end
+
+function [ Action, Reward, RTime, LStimulusNo, RStimulusNo, CorrectAction] = ShowTrial( LeftStimulusNo, RightStimulusNo, RewardsGranted, tmode)
+    
+    global Stimulus;
+    global RewardHappy;
+    global RewardSad;
+    
+    %****************
+    MaxResponseTime = 3;
+    FeedbackPresentationTime = 2.5;
+    %****************
+    
+    posLeft = -0.025 - 0.02;
+    posRight = 0.0   + 0.02;
+    
+    % clear screen
+    for i = 1:6
+        subplot(1,6,i);
+        axis off;
+        cla
+    end
+    
+    if randi(2) == 1
+        LStimulusNo = LeftStimulusNo;
+        RStimulusNo = RightStimulusNo;
+        if strcmp(tmode,'Feedback') == 1
+            LRewardGranted = RewardsGranted(1);
+            RRewardGranted = RewardsGranted(2);
+            BetterStimulus = '1';
+        end
+    else
+        LStimulusNo = RightStimulusNo;
+        RStimulusNo = LeftStimulusNo;
+        if strcmp(tmode,'Feedback') == 1
+            LRewardGranted = RewardsGranted(2);
+            RRewardGranted = RewardsGranted(1);     
+            BetterStimulus = '0';
+        end
+    end
+    cla
+    % left stimulus
+    q = subplot(1,6,3);
+    pos = get(q,'position');
+    pos(1) = pos(1) + posLeft;
+    set(q, 'position', pos);
+    imshow(Stimulus{LStimulusNo});
+    
+    
+    %right stimulus
+    q = subplot(1,6,4);
+    pos = get(q,'position');
+    pos(1) = pos(1) + posRight;
+    set(q, 'position', pos);
+    imshow(Stimulus{RStimulusNo});
+    
+    % read the choice
+    tic;
+    Action = getkeywaitTimer(MaxResponseTime);
+    RTime = toc;
+    if strcmp(tmode,'Feedback') == 1
+        if strcmp(Action, BetterStimulus) == 1
+            CorrectAction = 1;
+        else
+            CorrectAction = 0;
+        end
+    else
+        CorrectAction = [];
+    end
+
+    
+% % % PATRYK JANIEWSKI
+    % clear screen before showing feedback
+    for i = 1:6
+        subplot(1,6,i);
+        axis off;
+        cla
+    end
+    q = subplot(1,7,4);
+    pos = get(q,'position');
+    pos(1) = pos(1) - 0.015;
+    set(q, 'position', pos);
+    
+    switch Action 
+        case '1'   % left stimulus chosen
+            Action = 1;
+            if strcmp(tmode,'Feedback') == 1
+                Reward = LRewardGranted;
+                if Reward == 0
+                    Reward = -1;
+                    %Showtext('Źle', 50, 'red');  
+                    q = subplot(1,6,3);
+                    pos = get(q,'position');
+                    pos(1) = pos(1) + 0.05;
+                    set(q, 'position', pos);
+                    imshow(RewardSad);
+                else
+                    %Showtext('Dobrze', 50, 'blue'); 
+                    q = subplot(1,6,3);
+                    pos = get(q,'position');
+                    pos(1) = pos(1) + 0.05;
+                    set(q, 'position', pos);
+                    imshow(RewardHappy);
+                end
+            end
+        
+        case '0'   % right stimulus chosen
+            Action = 0;
+            if strcmp(tmode,'Feedback') == 1
+                Reward = RRewardGranted;
+                if Reward == 0
+                    Reward = -1;
+                    %Showtext('Źle', 50, 'red');
+                    q = subplot(1,6,3);
+                    pos = get(q,'position');
+                    pos(1) = pos(1) + 0.05;
+                    set(q, 'position', pos);
+                    imshow(RewardSad);
+                else
+                    %Showtext('Dobrze', 50, 'blue');
+                    q = subplot(1,6,3);
+                    pos = get(q,'position');
+                    pos(1) = pos(1) + 0.05;
+                    set(q, 'position', pos);
+                    imshow(RewardHappy);
+                end
+            end
+            
+        otherwise
+            Action = -1;
+            Reward = 0;
+            RTime = -1;
+            Showtext('Nie udzieliłeś żadnej odpowiedzi', 25, 'red');
+        
+    end
+    
+    if strcmp(tmode,'Feedback') == 1
+        pause(FeedbackPresentationTime);
+    else
+        Reward = [];
+        if Action == -1
+            pause(FeedbackPresentationTime);
+        end
+    end
+
+end
+
+function h = InitScreen()
+
+    h = figure('Color','white', 'Menu','none');
+    jFrame = get(handle(gcf),'JavaFrame');
+    pause(0.01);
+    jFrame.setMaximized(true);
+
+end
+
+
+function Showtext( message, fsize, color )
+
+    subplot(1,1,1);
+    cla;
+    text(0.5, 0.5, message, 'Rotation',0, 'FontSize', fsize, 'Color',color, ...
+        'HorizontalAlignment','Center', 'VerticalAlignment','Middle')
+    axis off;
+    
+end
+
+
+function Showfocuspoint(MinTime, MaxTime)
+    
+    subplot(1,1,1);
+    cla;
+    rectangle('Position',[-10,-3.65,5,5],'Curvature',[1,1],'EdgeColor','white','FaceColor',[0 0.7 0]); axis equal; axis([-100 100 -100 100]);
+    set(gca,'xcolor','w','ycolor','w','xtick',[],'ytick',[])
+    set(gcf,'KeyPressFcn',@keypress_callback);
+    pause((MaxTime-MinTime)*rand + MinTime);
+    
+end
+
+
+%function SaveToExcel(filename, sheet, xlRange, Text)
+%
+%    n = length(xlRange);
+%    for i = 1:n
+%        xlswrite(filename,Text{i},sheet,xlRange{i});
+%    end
+%    
+%end
+
+
+function keypress_callback(gcbo,event)
+
+    switch event.Key
+    end
+    
+end
+
+
+function ch = getanykey() 
+
+    figh = figure('windowstyle','modal','position',[-100 -100 1 1],'KeyPressFcn',@(obj,evt) 0);
+    waitfor(gcf,'CurrentCharacter');
+    ch = get(gcf,'CurrentCharacter');           
+    delete(figh);
+    
+end
+
+function ch = getkeywaitTimer(m) 
+    
+    keyOK = false;
+    while m > 0 && keyOK == false 
+        tic;
+        ch = getkeywait(m);
+        x = double(toc);
+        m = round(m - x,3);
+        if strcmp(ch,'1')==1 || strcmp(ch,'0')==1
+            keyOK = true;
+        end
+    end
+    if keyOK == false
+        ch = -1;
+    end
+    
+end
+
+
+% % % KATARZYNA SZYMAŃSKA
+function ch = getkeywait(m) 
+
+    % check input argument
+    error(nargchk(1,1,nargin)) ;
+    if numel(m)~=1 || ~isnumeric(m) || ~isfinite(m) || m <= 0   
+        error('Argument should be a single positive number.') ;
+    end
+
+    % set up the timer
+    tt = timer ;
+    tt.timerfcn = 'uiresume';
+    tt.startdelay = m ;            
+
+    % Set up the figure
+    % May be the position property should be individually tweaked to avoid visibility
+    callstr = 'set(gcbf,''Userdata'',double(get(gcbf,''Currentcharacter''))) ; uiresume ' ;
+    fh = figure(...
+    'name','Press a key', ...
+    'keypressfcn',callstr, ...
+    'windowstyle','modal',... 
+    'numbertitle','off', ...
+    'position',[0 0  1 1],...
+    'userdata',-1) ; 
+    try
+        % Wait for something to happen or the timer to run out
+        start(tt) ;    
+        uiwait ;
+        ch = get(fh,'CurrentCharacter') ;
+        if isempty(ch) % a non-ascii key was pressed, return a NaN
+            ch = NaN ;
+        end
+    catch
+        % Something went wrong, return zero.
+        ch = 0 ;
+    end
+
+    % clean up the timer ...
+    stop(tt) ;
+    delete(tt) ; 
+    % ... and figure
+    if ishandle(fh)
+        delete(fh) ;
+    end
+
+end
